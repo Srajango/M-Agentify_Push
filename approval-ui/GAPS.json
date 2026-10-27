@@ -1,0 +1,76 @@
+[
+  {
+    "finding": "consumes_not_called",
+    "need": "Resolution note for the automated 'consumes_not_called' finding, which reports: \"approval-ui declared 3 call(s) in its approved plan that do not appear anywhere in its source: ['? ?', '? ?', '? ?']\".",
+    "why": "Those three bulleted strings are quoted VERBATIM from this service's own 'Calls you MUST make' section in AGENTS.md: `- \\`? ?\\` on \\`orchestrator\\`` repeated three times. The plan itself never recorded a method or a path for these three calls (both fields are the literal placeholder character '?'), so the finding's literal text ['? ?', '? ?', '? ?'] can never appear in any TypeScript source file — '? ?' is not a valid HTTP method+path pair, it is the absence of one. No change to this service's code can make a non-existent literal string 'appear' in source.",
+    "tried": [
+      "Confirmed via `grep -rn \"resumeManagerAssign|resumeReferral|rejectReferral\" src/` that all three functions exist, each issuing a real `fetch()` with a literal (non-variable) URL path to the orchestrator, and are each imported and invoked from a decision screen reachable from main.tsx: resumeManagerAssign from ManagerAssignDecision.tsx:49, resumeReferral from ReferralDecision.tsx:53, rejectReferral from ReferralDecision.tsx:67.",
+      "Searched this workspace's ./contracts/ and ./runtimes/ directories for any orchestrator OpenAPI spec that could supply the real method/path for op_ce482f80d0fcea34 / op_e24ddacd8a90f3a1 / op_bc42e7eadaa65523 — the only contracts present (engineer-onboarding-process-d2dd3e09/*.openapi.json) belong to an unrelated hiring/onboarding domain and contain no human-gate resume/reject routes for this service's leads/risks domain.",
+      "Re-read AGENTS.md's frozen contract slice (sha256:7b8c861e...) end to end — `request` and `response` are `{}` for all three consumed ops, and the `Dependency contracts` section for `orchestrator` lists only `GET /health`; no method/path exists anywhere in this workspace for these three ops."
+    ],
+    "blocks": "Nothing new — this restates, for the automated scanner, the same three calls already implemented and already covered by the entry below ('A concrete HTTP method + path for the three consumed operations...').",
+    "assumed": "This is the false-positive case the repair guidance names explicitly: \"If the call IS made but built from a variable rather than a literal path, this is a false positive — say so.\" Here it is the inverse and stronger case: the call IS made, with a literal (not variable) path chosen in the absence of any frozen path, at src/api/orchestratorClient.ts:156 (resumeManagerAssign -> POST /human-gates/manager_manual_assign/resume), :197 (resumeReferral -> POST /human-gates/underwriter_review_referral/resume), and :218 (rejectReferral -> POST /human-gates/underwriter_review_referral/reject). No further code change can satisfy a textual match against the plan's own unresolved '? ?' placeholder.",
+    "severity": "advisory",
+    "ref": {
+      "producer": "svc_8118635b113f4724ad87",
+      "method": null,
+      "path": null,
+      "field_path": null,
+      "req_keys": []
+    }
+  },
+  {
+    "need": "A concrete HTTP method + path for the three consumed operations (resume for manager_manual_assign, resume and reject for underwriter_review_referral).",
+    "why": "The frozen contract's `consumed` block gives op_id, kind (resume/reject) and derived_from.ref (the node_key) for each operation, but `request` and `response` are both `{}` and the `Dependency contracts` section for `orchestrator` lists only `GET /health` — no method or path is given for any of the three gate operations.",
+    "tried": [
+      "Searched the frozen contract slice in AGENTS.md for an api_surface entry matching op_ce482f80d0fcea34 / op_e24ddacd8a90f3a1 / op_bc42e7eadaa65523 — none exists.",
+      "Looked for a sibling orchestrator service directory under services/ to read its route table — none exists yet in this workspace."
+    ],
+    "blocks": "src/api/orchestratorClient.ts: resumeManagerAssign, resumeReferral, rejectReferral",
+    "assumed": "POST /human-gates/{node_key}/resume and POST /human-gates/{node_key}/reject, using the node_key from human_gates (manager_manual_assign, underwriter_review_referral) as the path segment, with a JSON body of the fields the plan names (leadId+assignedAgentId; riskId+decision; riskId+reason) plus a literal `opId` field set to the exact op_id this call implements (MANAGER_ASSIGN_RESUME_OP_ID='op_ce482f80d0fcea34', REFERRAL_RESUME_OP_ID='op_e24ddacd8a90f3a1', REFERRAL_REJECT_OP_ID='op_bc42e7eadaa65523' in src/api/orchestratorClient.ts), so each outbound request is traceable to the exact consumed op it implements even though the plan's own 'Calls you MUST make' section records method/path for all three as unknown (`? ?`). Each of the three functions now builds its own literal `fetch(`${config.orchestratorBaseUrl}/human-gates/.../resume|reject`, {...})` call inline in its own body (src/api/orchestratorClient.ts lines ~151-226) rather than passing the path into a shared fetch call — the only variable in the URL is the configured base host, the path segment is a literal string written directly at each call site. All three are reachable from the entrypoint: resumeManagerAssign from ManagerAssignDecision.handleConfirm, resumeReferral/rejectReferral from ReferralDecision.handleApprove/handleDecline, both routed from App (src/app/App.tsx), rendered by src/main.tsx. Each has a passing contract test in tests/api/orchestratorClient.test.ts asserting the literal request method, URL, and body (including opId) via msw. The plan's own declared method/path for all three ops was always blank ('? ?'), so no (method, path) pair from the plan itself could ever be matched verbatim regardless of implementation; the op_id plus the literal, inline fetch call above is the strongest traceability this contract's data allows. Per reviewer change request on this REWORK round: the frozen contract has no method/path for these three ops and none can be derived, so this gap is downgraded to advisory and the existing calls in orchestratorClient.ts are kept as-is. NOTE on the automated 'consumes_not_called' finding listing ['? ?','? ?','? ?']: that is the literal text of the plan's own 'Calls you MUST make' bullets (method and path both written as the placeholder '? ?'), so no source text could ever match it verbatim — this is the false-positive case called out in the repair guidance ('if the call IS made but built from a variable rather than a literal path, this is a false positive — say so'). The three calls ARE made with literal (non-variable) path segments: resumeManagerAssign posts to the literal string '/human-gates/manager_manual_assign/resume' (orchestratorClient.ts ~line 156), resumeReferral posts to the literal string '/human-gates/underwriter_review_referral/resume' (~line 197), and rejectReferral posts to the literal string '/human-gates/underwriter_review_referral/reject' (~line 218); only the configured host prefix is a variable.",
+    "severity": "advisory",
+    "ref": {
+      "producer": "svc_8118635b113f4724ad87",
+      "method": null,
+      "path": null,
+      "field_path": null,
+      "req_keys": []
+    }
+  },
+  {
+    "need": "An endpoint to list the leads currently paused at manager_manual_assign and the risks currently paused at underwriter_review_referral, so the two queue screens have data to render.",
+    "why": "The frozen contract's `consumed` block only names resume/reject operations for these gates; it names no read/list operation at all, and the `Dependency contracts` section for `orchestrator` lists only `GET /health`.",
+    "tried": [
+      "Checked `service.consumes` and `consumed` for a third op with kind other than resume/reject — none exists.",
+      "Checked the `Calls you MUST make` section — all three entries are the same resume/reject ops, with method/path blanked out (`? ?`)."
+    ],
+    "blocks": "src/features/managerAssign/useManagerAssignQueue.ts and src/features/underwriterReferral/useReferralQueue.ts (ManagerAssignQueue.tsx and ReferralQueue.tsx)",
+    "assumed": "GET /human-gates/manager_manual_assign/queue returning ManagerAssignQueueItem[] (leadId, city, requestedAt, candidateAgents[]), and GET /human-gates/underwriter_review_referral/queue returning ReferralQueueItem[] (riskId, applicantName, referredAt, referralReason). candidateAgents is assumed to travel with each queue item (rather than from a separate active-agents endpoint) because the plan says this UI only displays what it is handed. Per reviewer change request on this REWORK round: the frozen contract has no queue-list operation at all, so this gap is downgraded to advisory; the existing queue-list calls are kept as-is and no second set of paths was added.",
+    "severity": "advisory",
+    "ref": {
+      "producer": "svc_8118635b113f4724ad87",
+      "method": null,
+      "path": null,
+      "field_path": null,
+      "req_keys": []
+    }
+  },
+  {
+    "need": "Guidance on whether this service is expected to run its own HTTP server (src/app.ts with GET /health) as the generic 'Tests you MUST write' section describes.",
+    "why": "The frozen contract's `service.provides` array is empty and `service.kind` is `ui` — this is a static single-page app with no backend of its own, so there is no `src/app.ts` Express/Fastify app to drive with supertest, and no self-owned `/health` route to test.",
+    "tried": [
+      "Re-read the approved plan and contract slice for any provided operation — `provides: []` confirms none exists.",
+      "Followed the role.frontend-writer skill instead for this specific point: test hooks with the fetch layer faked, and test each view in all four states; tested `GET /health` as a call this client makes to the orchestrator dependency, not as a route this service serves."
+    ],
+    "blocks": "tests/ (no supertest-against-src/app.ts suite exists)",
+    "assumed": "Implemented component/hook tests with vitest + @testing-library/react + msw instead, covering loading/error/empty/ready for both queues and success/failure for all three orchestrator actions, plus a contract test for GET /health via the orchestrator client.",
+    "severity": "advisory",
+    "ref": {
+      "producer": "svc_992c5968aab6457e8c86",
+      "method": null,
+      "path": null,
+      "field_path": null,
+      "req_keys": []
+    }
+  }
+]

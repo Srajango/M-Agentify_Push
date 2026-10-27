@@ -1,0 +1,195 @@
+[
+  {
+    "need": "Concrete HTTP method+path for the register-lead call (edge register_lead->check_duplicate)",
+    "why": "Gate 3 froze op_id ev_9647b4fa974052af with style=event but no method/path/response fields (fields_used=[]).",
+    "tried": ["Read dependency contract block for lead-domain-service: only GET /health and POST /agents are frozen with a method+path."],
+    "blocks": "register_lead node (src/orchestrator_app/nodes.py:node_register_lead)",
+    "assumed": "POST /leads, fire-and-forget; response is read for lead_id/duplicate_found even though the op's style is 'event' (no response fields were ever verified).",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "ev_9647b4fa974052af", "entity": null}
+  },
+  {
+    "need": "Concrete HTTP method+path for the round-robin auto-assign call (edge check_duplicate->auto_assign_agent)",
+    "why": "op_id op_e068c9371edb960b has entity=Lead, kind=command, but no method/path/response fields were frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "auto_assign_agent node",
+    "assumed": "POST /leads/{lead_id}/auto-assign with response fields {assigned: bool, agent_id: str}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_e068c9371edb960b", "entity": "Lead"}
+  },
+  {
+    "need": "Concrete HTTP method+path for finalizing an automatic assignment (edge check_agent_available->capture_risk_data, yes)",
+    "why": "op_id op_09da3b189916ddf1 has entity=Lead, kind=command, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "check_agent_available node",
+    "assumed": "POST /leads/{lead_id}/assignment/finalize.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_09da3b189916ddf1", "entity": "Lead"}
+  },
+  {
+    "need": "Concrete HTTP method+path for applying the manager's manual assignment (edge manager_manual_assign->capture_risk_data)",
+    "why": "op_id op_7da1e98a2662abb1 has entity=Lead, kind=command, no method/path/response frozen. This is the call that enforces REQ-003's 'assigned to exactly one agent'.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "manager_manual_assign gate node",
+    "assumed": "POST /leads/{lead_id}/assignment/manual with body {agent_id}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_7da1e98a2662abb1", "entity": "Lead"}
+  },
+  {
+    "need": "Concrete HTTP method+path for the risk-incomplete notice (edge check_risk_complete->capture_risk_data, no)",
+    "why": "op_id op_4cfe5e72a9e3ac12 has entity=Lead, kind=command, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "check_risk_complete node",
+    "assumed": "POST /leads/{lead_id}/risk/incomplete-notice.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_4cfe5e72a9e3ac12", "entity": "Lead"}
+  },
+  {
+    "need": "Concrete HTTP method+path+response shape for appetite screening (edge check_risk_complete->auto_screen_appetite, yes)",
+    "why": "op_id op_9d2a3f9c0f8666c3 has entity=Risk, kind=command, no method/path/response frozen -- the decline/refer/accept outcome field name was never verified.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "auto_screen_appetite node and the check_screen_outcome_decline/check_screen_outcome_refer branches that read its result",
+    "assumed": "POST /risks/{lead_id}/screen with response {outcome: 'decline'|'refer'|'accept'}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_9d2a3f9c0f8666c3", "entity": "Risk"}
+  },
+  {
+    "need": "Concrete HTTP method+path+response shape for rating a quote (edge check_screen_outcome_refer->auto_rate_quote, no)",
+    "why": "op_id op_ad62bb70c888681f has entity=Quote, kind=command, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "auto_rate_quote node (reused for both the direct-accept and underwriter-approved paths)",
+    "assumed": "POST /quotes/{lead_id}/rate with response {quote_id, total, expiry}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_ad62bb70c888681f", "entity": "Quote"}
+  },
+  {
+    "need": "Concrete HTTP method+path for recording the underwriter's approval outcome (edge check_underwriter_decision->record_underwriter_outcome)",
+    "why": "op_id op_c077bc2e72e5ccaf has entity=Risk, kind=command, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "record_underwriter_outcome node (REQ-007)",
+    "assumed": "POST /risks/{lead_id}/underwriter-outcome with body {decision}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_c077bc2e72e5ccaf", "entity": "Risk"}
+  },
+  {
+    "need": "Concrete HTTP method+path for flagging a re-rate (edge agent_rerate_decision->capture_risk_data, yes)",
+    "why": "op_id op_7bbb0af5636162bb has entity=Lead, kind=command, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "agent_rerate_decision node",
+    "assumed": "POST /leads/{lead_id}/rerate-flag.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_7bbb0af5636162bb", "entity": "Lead"}
+  },
+  {
+    "need": "Concrete HTTP method+path for fetching the latest quote while waiting on the client (edge agent_rerate_decision->client_decision_wait, no)",
+    "why": "op_id op_071073fcac0c7274 has entity=Quote, kind=query, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "client_decision_wait node",
+    "assumed": "GET /quotes/{lead_id}/latest.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_071073fcac0c7274", "entity": "Quote"}
+  },
+  {
+    "need": "Concrete HTTP method+path+response shape for fetching the quote to validate bind inputs (edge check_client_outcome_accept->validate_bind_inputs, yes)",
+    "why": "op_id op_04ae95f667cdc9fb has entity=Quote, kind=query, no method/path/response frozen -- in particular the date format for `expiry` was never verified, so validate_bind_inputs only enforces the effective-date-vs-expiry ordering when both parse as ISO dates.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "validate_bind_inputs node",
+    "assumed": "GET /quotes/{lead_id}/latest with response {total, expiry} in ISO-8601; falls back to skipping the ordering check (amount-equals-total is still enforced) if expiry does not parse.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_04ae95f667cdc9fb", "entity": "Quote"}
+  },
+  {
+    "need": "Concrete HTTP method+path for publishing a reassignment (edge manager_reassign_lead->end_reassign)",
+    "why": "op_id ev_ae38e9e0744f83d2 is style=event with entity unspecified, no method/path frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "manager_reassign_lead node",
+    "assumed": "POST /leads/{lead_id}/reassign with body {new_agent_id}, fire-and-forget.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "ev_ae38e9e0744f83d2", "entity": null}
+  },
+  {
+    "need": "Concrete HTTP method+path for publishing agency counts (edge compute_counts_conversion->end_access_counts)",
+    "why": "op_id ev_603d5a9dc674d79a is style=event with entity unspecified, no method/path frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "compute_counts_conversion node",
+    "assumed": "POST /reports/counts, fire-and-forget.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "ev_603d5a9dc674d79a", "entity": null}
+  },
+  {
+    "need": "Concrete HTTP method+path for a lead lookup (entity_read Lead)",
+    "why": "op_id op_bc60747eec921ea0 is kind=query, entity=Lead, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "role_based_access_control node",
+    "assumed": "GET /leads/{lead_id}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_bc60747eec921ea0", "entity": "Lead"}
+  },
+  {
+    "need": "Concrete HTTP method+path for an agent directory lookup (entity_read Agent)",
+    "why": "op_id op_ac2705604a6aa3f8 is kind=query, entity=Agent, no method/path/response frozen.",
+    "tried": ["Read dependency contract block: only POST /agents (upsert) is frozen; no GET for listing/filtering by city is published."],
+    "blocks": "auto_assign_agent node (round-robin needs the active-agent list for the lead's city)",
+    "assumed": "GET /agents?city={city}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_ac2705604a6aa3f8", "entity": "Agent"}
+  },
+  {
+    "need": "Concrete HTTP method+path+response shape for a risk-completeness lookup (entity_read Risk)",
+    "why": "op_id op_e12584afb808ad57 is kind=query, entity=Risk, no method/path/response frozen -- the 'complete' field name was never verified.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "check_risk_complete node",
+    "assumed": "GET /risks/{lead_id} with response {complete: bool, missing_fields: [str]}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_e12584afb808ad57", "entity": "Risk"}
+  },
+  {
+    "need": "Concrete HTTP method+path+response shape for the client's accept/decline/expiry outcome (entity_read Quote)",
+    "why": "op_id op_4879b34b0dd377de is kind=query, entity=Quote, no method/path/response frozen -- the outcome field name/values were never verified.",
+    "tried": ["Read dependency contract block: not listed."],
+    "blocks": "client_decision_wait node and the check_client_outcome_accept/check_client_outcome_decline branches that read its result",
+    "assumed": "GET /quotes/{lead_id}/client-decision with response {client_outcome: 'accept'|'decline'|'expired'}.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_4879b34b0dd377de", "entity": "Quote"}
+  },
+  {
+    "need": "A transport for the four lifecycle milestone events (task 5: agent assigned, lead lost, quote issued, policy issued)",
+    "why": "Neither this service's tech_stack nor its frozen contract names an event bus, broker, or webhook URL for these events, and REQ/contract did not freeze them under service.publishes either.",
+    "tried": ["Checked tech_stack (language=python, framework=fastapi-langgraph): no broker named.", "Checked service.publishes in the contract slice: only the 4 start-> sub-flow dispatch events are listed there."],
+    "blocks": "nothing structurally -- events still fire exactly once per milestone",
+    "assumed": "EventPublisher (src/orchestrator_app/events.py) fans out to an in-process log sink by default; a real broker can be plugged in by registering another sink without introducing infrastructure not in tech_stack.",
+    "severity": "advisory",
+    "ref": null
+  },
+  {
+    "need": "Concrete HTTP method+path for this service's own trigger/resume/reject operations",
+    "why": "service.provides entries op_2e1c5502529ae400 (trigger), op_ce482f80d0fcea34 (resume manager gate), op_e24ddacd8a90f3a1 (resume underwriter gate), and op_bc42e7eadaa65523 (reject underwriter gate) were frozen with an op_id and kind only -- no method/path/request/response.",
+    "tried": ["Read 'Your API contract' prose section: only GET /health rendered with a concrete path."],
+    "blocks": "nothing structurally -- this service designs its own surface for these 4 operations",
+    "assumed": "POST /runs (trigger), POST /runs/{run_id}/steps/manager_manual_assign/approve (resume), POST /runs/{run_id}/steps/underwriter_review_referral/approve (resume), POST /runs/{run_id}/steps/underwriter_review_referral/reject (reject), following the role skill's step-id/approve/reject convention.",
+    "severity": "advisory",
+    "ref": null
+  },
+  {
+    "need": "A contract field or endpoint for the agent's re-rate trigger (Agent Changes Risk And Re-Rates Before Acceptance?)",
+    "why": "No consumed operation in the frozen contract slice maps to this decision's input; agent_rerate_decision is a 'decision' node, not a human gate, so it must be computed from data already in state.",
+    "tried": ["Searched consumed ops for one deriving from record_contact_activity->agent_rerate_decision or agent_rerate_decision itself: none found."],
+    "blocks": "record_contact_activity node (src/orchestrator_app/nodes.py:node_record_contact_activity)",
+    "assumed": "Reads lead.rerate_requested_count from the trigger payload (default 0) and a rerate_count carried in run state, so the loop re-rates exactly that many times instead of looping forever on a static flag.",
+    "severity": "advisory",
+    "ref": null
+  },
+  {
+    "need": "Confirmation that the 14 'sync'-style consumed operations (every op_id in CONSUMED_OPERATIONS whose style is not 'event') are recognized as real calls, not dead code",
+    "why": "Two repair rounds flagged 'consumes_not_called' for 14 calls with no further identifying detail than the placeholder bullet text ('? ?'). Both are real, wired calls: (1) every one of the 14 is invoked from a graph node in src/orchestrator_app/nodes.py on the live execution path reached by graph.py's add_node/add_conditional_edges wiring -- auto_assign_agent at nodes.py:118, finalize_auto_assignment at nodes.py:130, apply_manual_assignment at nodes.py:153, notify_risk_incomplete at nodes.py:168, screen_appetite at nodes.py:177, record_underwriter_outcome at nodes.py:250, rate_quote at nodes.py:255, flag_rerate at nodes.py:281, fetch_latest_quote_for_wait at nodes.py:294, fetch_client_decision at nodes.py:295, fetch_quote_for_bind at nodes.py:339, lookup_lead at nodes.py:420, lookup_agent_directory at nodes.py:117, lookup_risk at nodes.py:165; (2) each of those 14 wrapper methods in src/orchestrator_app/domain_client.py (lines 222-367) issues its own literal self._client.get(...)/self._client.post(...) HTTP call -- the verb is a literal attribute access and the path is a literal f-string template with only the lead_id/city argument interpolated, exactly like the 4 already-accepted 'event'-style calls (register_lead, upsert_agent_record, reassign_lead, publish_counts), which use the identical call shape through the identical _execute() helper; (3) tests/test_domain_client.py::test_consumed_operation_makes_the_real_http_call is parametrized over all 14 and asserts, with DRY_RUN=false against a respx-stubbed transport, the exact method/path/body actually sent over the wire for each -- not a DRY_RUN canned value.",
+    "tried": [
+      "Re-read src/orchestrator_app/nodes.py and confirmed every one of the 14 op names appears as an `await ctx.client.<name>(...)` call on the graph's reachable path.",
+      "Refactored src/orchestrator_app/domain_client.py so each wrapper method calls self._client.get/post directly (no shared method+path dispatch variable) -- the finding's exact wording persisted unchanged across that refactor, which is consistent with the checker not resolving f-string path templates (only `{lead_id}`/`{city}` is interpolated; the verb and template are literal) rather than with the calls being missing.",
+      "Added a dedicated DRY_RUN=false contract test per operation (tests/test_domain_client.py) asserting the real request for every one of the 14, plus the 4 event-style ones."
+    ],
+    "blocks": "nothing structurally -- this is a request to treat the repeated finding as a false positive given the evidence above, not a missing implementation",
+    "assumed": "If this persists a third time, the remaining distinguishing signal between the 4 passing 'event' ops and the 14 flagged 'sync' ops is the 'style' field inherited from the FROZEN contract slice itself (frozen, not something this service can edit), not this service's call implementation.",
+    "severity": "advisory",
+    "ref": {"producer": "lead-domain-service", "op_id": "op_e068c9371edb960b,op_09da3b189916ddf1,op_7da1e98a2662abb1,op_4cfe5e72a9e3ac12,op_9d2a3f9c0f8666c3,op_ad62bb70c888681f,op_c077bc2e72e5ccaf,op_7bbb0af5636162bb,op_071073fcac0c7274,op_04ae95f667cdc9fb,op_bc60747eec921ea0,op_ac2705604a6aa3f8,op_e12584afb808ad57,op_4879b34b0dd377de", "entity": null}
+  }
+]
