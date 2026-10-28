@@ -1,0 +1,26 @@
+[
+  {
+    "need": "A concrete orchestrator event-bus URL/path for the four outbound EVENT calls declared in the frozen contract (service.publishes entries all have empty name/payload fields).",
+    "why": "The frozen contract lists four 'EVENT on orchestrator' calls but does not specify a path, host, or payload shape beyond op_id placeholders.",
+    "tried": ["Searched the frozen contract block in AGENTS.md for a concrete path or payload schema under service.publishes — all four entries have name: \"\" and payload: {}."],
+    "blocks": "Nothing at the unit level: DRY_RUN=true (the harness default) never calls out. Only a live DRY_RUN=false deployment needs a real ORCHESTRATOR_EVENTS_URL.",
+    "assumed": "A single configurable ORCHESTRATOR_EVENTS_URL env var (default http://orchestrator.internal/events) that every domain event (lead-registered, lead-status-changed, quote-issued, policy-issued) POSTs an {event_type, payload} envelope to. Tested against a stubbed transport in tests/test_events.py.",
+    "severity": "advisory"
+  },
+  {
+    "need": "Concrete ordered appetite decline/refer rule thresholds (REQ-005) and the exact round-robin agent-selection algorithm (task 2) for Private Car underwriting.",
+    "why": "The approved plan says 'ordered decline/refer rules, first match wins' and 'round-robin among active agents' but does not name the specific thresholds or rotation mechanics, and there is no /repo reference clone for this greenfield service to copy them from.",
+    "tried": ["Read AGENTS.md's REQ-005/REQ-002 descriptions and the ordered-tasks 'Done when' bullets for task 2 and task 3 — neither names a threshold value or a rotation counter design."],
+    "blocks": "Nothing structurally: the endpoints exist, run in order, and REQ-005's 'first match wins, no human step' and REQ-002/task-2's 'never left unassigned' outcomes both hold under the chosen values.",
+    "assumed": "Decline rules (first match wins): vehicle registration_year more than 15 years old; IDV below 50,000; more than 3 prior claims. Refer rules (checked only if no decline matched): exactly 3 prior claims; IDV above 1,500,000. Round-robin is implemented as least-currently-assigned-active-agent-in-city (ties broken by agent_id) rather than a persisted rotating index, which distributes leads evenly without needing rotation state that would not survive a restart. See lead_domain.services.risk._evaluate_decline_rules/_evaluate_refer_rules and lead_domain.services.leads._select_round_robin_agent.",
+    "severity": "advisory"
+  },
+  {
+    "need": "The calendar year to use in the policy number PC-{calendar year}-{six digits} (REQ-014): the year of policy issuance, or the year of the bind's effective_date.",
+    "why": "REQ-014 says 'PC-{calendar year}-{six digits}' without specifying which year when the two could differ (e.g. binding in December with a January effective date).",
+    "tried": ["Read REQ-014 and task 6's 'Done when' bullets in AGENTS.md — both state the format without disambiguating which date's year is used."],
+    "blocks": "Nothing: every test binds with an effective_date in the same calendar year as issuance, so this ambiguity is untested but does not block any requirement.",
+    "assumed": "The calendar year of policy issuance (datetime.utcnow().year at bind time), not the effective_date's year. See lead_domain.services.bind.bind_and_issue_policy.",
+    "severity": "advisory"
+  }
+]
