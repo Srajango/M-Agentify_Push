@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "service_key": "lead-domain-service",
+  "requirements": [
+    {
+      "req_key": "REQ-001",
+      "status": "implemented",
+      "file": "src/lead_domain/services/leads.py",
+      "line": 18,
+      "symbol": "register_lead",
+      "test": "tests/test_leads.py::test_register_lead_happy_path",
+      "note": "Creates the Lead row with customer_name, mobile_number, email, city, source, product='Private Car' and status=LeadStatus.NEW."
+    },
+    {
+      "req_key": "REQ-002",
+      "status": "implemented",
+      "file": "src/lead_domain/repositories.py",
+      "line": 29,
+      "symbol": "LeadRepository.list_open_by_mobile_and_vehicle",
+      "test": "tests/test_leads.py::test_duplicate_open_lead_is_refused",
+      "note": "Sequential scan over all leads for a non-Lost/non-Converted match on mobile_number + vehicle_registration_number; register_lead raises DuplicateLeadError (409) when one is found."
+    },
+    {
+      "req_key": "REQ-004",
+      "status": "implemented",
+      "file": "src/lead_domain/services/risk.py",
+      "line": 40,
+      "symbol": "capture_risk_data",
+      "test": "tests/test_risk.py::test_incomplete_risk_keeps_lead_in_capture_and_lists_missing_fields",
+      "note": "Keeps lead.status == Capture and risk.is_complete == False while any of REQUIRED_RISK_FIELDS is missing; the response lists missing_fields and no further node is reachable from capture until it is True."
+    },
+    {
+      "req_key": "REQ-005",
+      "status": "implemented",
+      "file": "src/lead_domain/services/risk.py",
+      "line": 104,
+      "symbol": "auto_screen_appetite",
+      "test": "tests/test_risk.py::test_decline_rule_sets_lead_lost_and_stops_at_first_match",
+      "note": "_evaluate_decline_rules and _evaluate_refer_rules are checked in a fixed order with an early return on first match; no human-review step is inserted between capture and this automatic screening."
+    },
+    {
+      "req_key": "REQ-006",
+      "status": "implemented",
+      "file": "src/lead_domain/services/risk.py",
+      "line": 104,
+      "symbol": "auto_screen_appetite",
+      "test": "tests/test_risk.py::test_decline_rule_sets_lead_lost_and_stops_at_first_match",
+      "note": "On a decline match, lead.status is set to LeadStatus.LOST with lost_reason set; a Lost lead is excluded from 'converted' and 'open' counts in compute_counts_conversion."
+    },
+    {
+      "req_key": "REQ-008",
+      "status": "implemented",
+      "file": "src/lead_domain/services/risk.py",
+      "line": 150,
+      "symbol": "record_underwriter_outcome",
+      "test": "tests/test_risk.py::test_underwriter_decline_sets_lead_lost_with_reason",
+      "note": "outcome == 'Declined' sets risk.decline_reason = 'Underwriter declined' and lead.status = LeadStatus.LOST with that same lost_reason."
+    },
+    {
+      "req_key": "REQ-009",
+      "status": "implemented",
+      "file": "src/lead_domain/services/quotes.py",
+      "line": 30,
+      "symbol": "auto_rate_quote",
+      "test": "tests/test_quotes.py::test_comprehensive_rating_formula_and_rounding",
+      "note": "Reads RiskRepository.latest_approved_for_lead, rates via the one rate_card.rate_risk formula, stores a new Quote row (rated_at, expires_at = end of day 7, breakdown fields) and sets lead.status = QUOTED; record_underwriter_outcome chains into it automatically on approval with no added review step (process_graph edge record_underwriter_outcome->auto_rate_quote)."
+    },
+    {
+      "req_key": "REQ-010",
+      "status": "implemented",
+      "file": "src/lead_domain/rate_card.py",
+      "line": 16,
+      "symbol": "rate_risk",
+      "test": "tests/test_quotes.py::test_comprehensive_rating_formula_and_rounding",
+      "note": "Computes own-damage (Comprehensive only) = idv * own_damage_rate * (1 - no_claim_bonus_fraction), a flat third-party premium for Third Party, applies loading_percent on the pre-loading total, and rounds the stored total via round_to_nearest_rupee (ROUND_HALF_UP to the integer rupee)."
+    },
+    {
+      "req_key": "REQ-011",
+      "status": "implemented",
+      "file": "src/lead_domain/services/activities.py",
+      "line": 15,
+      "symbol": "record_contact_activity",
+      "test": "tests/test_activities.py::test_no_route_exists_to_edit_or_delete_an_activity",
+      "note": "Only inserts a new Activity row (date/time via occurred_at, agent_id, channel, outcome, note, optional next_follow_up_date); no router anywhere in the service exposes PUT/PATCH/DELETE for an activity, verified by the 405 test."
+    },
+    {
+      "req_key": "REQ-012",
+      "status": "implemented",
+      "file": "src/lead_domain/services/quotes.py",
+      "line": 30,
+      "symbol": "auto_rate_quote",
+      "test": "tests/test_quotes.py::test_rerating_creates_new_version_and_replaces_previous",
+      "note": "Re-invoking on an already-Quoted lead creates version = len(existing)+1 and flips every prior Active quote to Replaced; validate_bind_inputs/bind_and_issue_policy only ever read QuoteRepository.latest_for_lead, so a replaced/expired/declined version can never be bound."
+    },
+    {
+      "req_key": "REQ-013",
+      "status": "implemented",
+      "file": "src/lead_domain/services/decisions.py",
+      "line": 18,
+      "symbol": "maybe_expire_quote",
+      "test": "tests/test_decisions.py::test_quote_past_its_seventh_day_automatically_expires_to_lost",
+      "note": "client_decision_wait handles decline (records price/bought_elsewhere/not_interested reason, sets Lost) and accept (reports quote status for bind); maybe_expire_quote is invoked at the start of both client_decision_wait and validate_bind_inputs and sets lead.status=Lost with lost_reason='Quote expired' once datetime.utcnow() passes quote.expires_at, with no human choosing it."
+    },
+    {
+      "req_key": "REQ-014",
+      "status": "implemented",
+      "file": "src/lead_domain/services/bind.py",
+      "line": 69,
+      "symbol": "bind_and_issue_policy",
+      "test": "tests/test_bind.py::test_bind_with_valid_inputs_issues_policy_and_converts_lead",
+      "note": "_generate_policy_number issues a unique 'PC-{calendar year}-{six digits}' number; the Policy row stores coverage_type, idv, premium_breakdown (own/third-party/loading/NCB/total), no_claim_bonus_amount, loading_amount and effective_date from the accepted quote, and lead.status becomes CONVERTED."
+    },
+    {
+      "req_key": "REQ-015",
+      "status": "implemented",
+      "file": "src/lead_domain/services/bind.py",
+      "line": 18,
+      "symbol": "validate_bind_inputs",
+      "test": "tests/test_bind.py::test_bind_before_today_is_rejected",
+      "note": "Rejects (ValidationFailedError, 422) when effective_date < today or > quote.expires_at.date(), or when collected_amount != quote.total_premium; only on success does it chain to bind_and_issue_policy via process_graph.run_transition."
+    },
+    {
+      "req_key": "REQ-016",
+      "status": "implemented",
+      "file": "src/lead_domain/services/leads.py",
+      "line": 116,
+      "symbol": "manager_reassign_lead",
+      "test": "tests/test_leads.py::test_reassigning_converted_or_lost_lead_is_rejected",
+      "note": "Raises ConflictError (409) when lead.status is CONVERTED or LOST; otherwise reassigns lead.agent_id to a different active agent without touching status or the Activity table (test_reassign_open_lead_keeps_status_and_activities asserts the activity count and status are unchanged)."
+    },
+    {
+      "req_key": "REQ-017",
+      "status": "implemented",
+      "file": "src/lead_domain/services/reporting.py",
+      "line": 17,
+      "symbol": "role_based_access_control",
+      "test": "tests/test_reporting.py::test_agent_sees_only_their_own_leads",
+      "note": "role='agent' scopes to LeadRepository.list_by_agent(agent_id); role='underwriter' scopes to list_referred(); role='manager' returns list_all() and additionally chains to compute_counts_conversion. The agent/underwriter/manager action routes (activities, decision, reassign, counts) are separate endpoints already gated by their own business rules."
+    },
+    {
+      "req_key": "REQ-018",
+      "status": "implemented",
+      "file": "src/lead_domain/services/reporting.py",
+      "line": 50,
+      "symbol": "compute_counts_conversion",
+      "test": "tests/test_reporting.py::test_conversion_rate_is_computed_live_from_lead_records",
+      "note": "Computes assigned/open/converted/lost per agent and for the agency by filtering LeadRepository.list_all() live on every call; conversion_rate = converted/assigned (0.0 when assigned is 0), never a stored or hand-entered value."
+    }
+  ]
+}

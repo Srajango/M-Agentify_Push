@@ -1,0 +1,115 @@
+[
+  {
+    "requirement": "Running the app shows a shell with navigation to a Manager area and an Underwriter area",
+    "status": "implemented",
+    "file": "src/app/App.tsx",
+    "symbol": "App",
+    "test": "tests/app/App.test.tsx > App > imports and renders without throwing, showing both area tabs"
+  },
+  {
+    "requirement": "orchestratorClient exposes a resume call for manager_manual_assign, a resume call for underwriter_review_referral, and a reject call for underwriter_review_referral, each with a request timeout and a typed retryable-error result",
+    "status": "implemented",
+    "file": "src/api/orchestratorClient.ts",
+    "symbol": "resumeManagerAssign, resumeReferral, rejectReferral, performFetch (AbortController timeout), OrchestratorRequestError.retryable",
+    "test": "tests/api/orchestratorClient.test.ts > orchestratorClient (DRY_RUN=false, stubbed transport) > resumeManagerAssign sends POST .../resume with the chosen agent; resumeManagerAssign throws a non-retryable OrchestratorRequestError on a 4xx response; resumeReferral sends POST .../resume with the decision; resumeReferral throws a retryable OrchestratorRequestError on a 5xx response; rejectReferral sends POST .../reject with the reason; rejectReferral throws a retryable OrchestratorRequestError on a network failure"
+  },
+  {
+    "requirement": "The Manager Assignment Queue screen lists every lead waiting for manual assignment, with loading, empty and error states",
+    "status": "implemented",
+    "file": "src/features/managerAssign/ManagerAssignQueue.tsx",
+    "symbol": "ManagerAssignQueue, useManagerAssignQueue",
+    "test": "tests/features/managerAssign/ManagerAssignQueue.test.tsx > ManagerAssignQueue > shows the loading state before the fetch resolves; shows the empty state when no leads are queued; shows a retryable error and retries on click; lists queued leads and navigates to the decision screen on selection"
+  },
+  {
+    "requirement": "Selecting an active agent on the Assign Agent Decision screen and confirming calls the orchestrator's resume action for this gate and removes the lead from the queue on success",
+    "status": "implemented",
+    "file": "src/features/managerAssign/ManagerAssignDecision.tsx",
+    "symbol": "ManagerAssignDecision.handleConfirm",
+    "test": "tests/features/managerAssign/ManagerAssignDecision.test.tsx > ManagerAssignDecision > calls resumeManagerAssign with the chosen agent and returns to the queue on success"
+  },
+  {
+    "requirement": "A failed resume call shows a retryable error and keeps the lead in the queue",
+    "status": "implemented",
+    "file": "src/features/managerAssign/ManagerAssignDecision.tsx",
+    "symbol": "ManagerAssignDecision.handleConfirm (catch branch, no navigate on failure)",
+    "test": "tests/features/managerAssign/ManagerAssignDecision.test.tsx > ManagerAssignDecision > shows a retryable error and keeps the decision screen on a failed resume"
+  },
+  {
+    "requirement": "The Underwriter Referral Queue screen lists every risk waiting for a referral decision, with loading, empty and error states",
+    "status": "implemented",
+    "file": "src/features/underwriterReferral/ReferralQueue.tsx",
+    "symbol": "ReferralQueue, useReferralQueue",
+    "test": "tests/features/underwriterReferral/ReferralQueue.test.tsx > ReferralQueue > shows the loading state before the fetch resolves; shows the empty state when no risks are queued; shows a retryable error and retries on click; lists queued risks and navigates to the decision screen on selection"
+  },
+  {
+    "requirement": "Choosing Approve or Approve with loading on the Referral Decision screen and confirming calls the orchestrator's resume action for this gate and removes the risk from the queue on success",
+    "status": "implemented",
+    "file": "src/features/underwriterReferral/ReferralDecision.tsx",
+    "symbol": "ReferralDecision.handleApprove",
+    "test": "tests/features/underwriterReferral/ReferralDecision.test.tsx > ReferralDecision > calls resumeReferral with \"approve\" and returns to the queue on success; calls resumeReferral with \"approve_with_loading\" on that action"
+  },
+  {
+    "requirement": "Choosing Decline on the Referral Decision screen and confirming calls the orchestrator's reject action for this gate and removes the risk from the queue on success",
+    "status": "implemented",
+    "file": "src/features/underwriterReferral/ReferralDecision.tsx",
+    "symbol": "ReferralDecision.handleDecline",
+    "test": "tests/features/underwriterReferral/ReferralDecision.test.tsx > ReferralDecision > calls rejectReferral on Decline and returns to the queue on success"
+  },
+  {
+    "requirement": "A failed resume or reject call shows a retryable error and keeps the risk in the queue",
+    "status": "implemented",
+    "file": "src/features/underwriterReferral/ReferralDecision.tsx",
+    "symbol": "ReferralDecision.handleApprove / handleDecline (catch branch, no navigate on failure)",
+    "test": "tests/features/underwriterReferral/ReferralDecision.test.tsx > ReferralDecision > shows a retryable error and keeps the decision screen on a failed resume; shows a non-retryable error and keeps the decision screen on a failed reject"
+  },
+  {
+    "requirement": "Human gates manager_manual_assign and underwriter_review_referral PAUSE the run and only advance via a recorded human decision",
+    "status": "not_implemented",
+    "reason": "The halt itself lives in the orchestrator's compiled graph (service_uid svc_8118635b113f4724ad87), which owns these nodes (service.owns_nodes is empty for approval-ui in the frozen contract). This service implements only the human-facing side: it displays the orchestrator's queue for each gate and calls the orchestrator's resume/reject action once a person decides — see the queue/decision requirements above. Declared in GAPS.json as the first and second entries (queue-listing and resume/reject endpoint shapes were not frozen either, since the orchestrator side is out of this service's scope to build).",
+    "file": null,
+    "symbol": null,
+    "test": null
+  },
+  {
+    "requirement": "Automated tests cover the loading, empty and error states of both waiting lists",
+    "status": "implemented",
+    "file": "tests/features/managerAssign/ManagerAssignQueue.test.tsx, tests/features/underwriterReferral/ReferralQueue.test.tsx",
+    "symbol": "ManagerAssignQueue, ReferralQueue",
+    "test": "see the four cases listed per queue above"
+  },
+  {
+    "requirement": "Automated tests cover a successful and a failed call for each of the three orchestrator actions from their decision screens",
+    "status": "implemented",
+    "file": "tests/features/managerAssign/ManagerAssignDecision.test.tsx, tests/features/underwriterReferral/ReferralDecision.test.tsx",
+    "symbol": "resumeManagerAssign, resumeReferral, rejectReferral call sites",
+    "test": "ManagerAssignDecision: success + failed resume; ReferralDecision: success + failed resume (via Approve), success + failed reject (via Decline), plus success for Approve with loading"
+  },
+  {
+    "requirement": "One contract test per dependency in the FROZEN block: feed its frozen response_example through the typed client with a stubbed fetch",
+    "status": "implemented",
+    "file": "src/api/orchestratorClient.ts",
+    "symbol": "fetchHealth",
+    "test": "tests/api/orchestratorClient.test.ts > orchestratorClient (DRY_RUN=false, stubbed transport) > GET /health sends the real request and parses the frozen response_example ({})"
+  },
+  {
+    "requirement": "At least one test per dependency client runs with DRY_RUN=false against a stubbed transport and asserts the real request URL/method/body",
+    "status": "implemented",
+    "file": "tests/api/orchestratorClient.test.ts",
+    "symbol": "describe('orchestratorClient (DRY_RUN=false, stubbed transport)')",
+    "test": "all 8 cases in that describe block assert request method/url/body via msw's request object"
+  },
+  {
+    "requirement": "An \"imports cleanly\" test (importing the app must not throw)",
+    "status": "implemented",
+    "file": "src/app/App.tsx",
+    "symbol": "App",
+    "test": "tests/app/App.test.tsx > App > imports and renders without throwing, showing both area tabs"
+  },
+  {
+    "requirement": "Every function defined is called, or deleted (no dead code)",
+    "status": "implemented",
+    "file": "src/app/useOrchestratorHealth.ts",
+    "symbol": "useOrchestratorHealth (calls fetchHealth, consumed by App)",
+    "test": "tests/app/App.test.tsx > App > shows a warning banner when the orchestrator health check fails"
+  }
+]

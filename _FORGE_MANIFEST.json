@@ -1,0 +1,56 @@
+{
+  "plan_id": "test-abc-6d657455",
+  "generated_at": "2026-10-28T17:15:50.627238+00:00",
+  "phase": "approved_pushed",
+  "gate_chain_complete": true,
+  "gate4_approved": true,
+  "verified": true,
+  "unverified_reasons": [],
+  "gating_blockers": [],
+  "gates_run": [
+    "blocked",
+    "code_grounding",
+    "contract_ok",
+    "contracts",
+    "done",
+    "error",
+    "fabrication_scan",
+    "gap_harvest",
+    "graph_topology",
+    "layout",
+    "mock_urls",
+    "per_service",
+    "requirement_attestation",
+    "smoke",
+    "total"
+  ],
+  "services": {
+    "orchestrator": {
+      "worker_status": "done",
+      "included": true,
+      "reason": null,
+      "blockers": [
+        "consumes_not_called",
+        "plan_gap_advisory"
+      ]
+    },
+    "lead-domain-service": {
+      "worker_status": "done",
+      "included": true,
+      "reason": null,
+      "blockers": [
+        "plan_gap_advisory"
+      ]
+    },
+    "approval-ui": {
+      "worker_status": "done",
+      "included": true,
+      "reason": null,
+      "blockers": [
+        "consumes_not_called",
+        "plan_gap_advisory"
+      ]
+    }
+  },
+  "include_failed": false
+}
