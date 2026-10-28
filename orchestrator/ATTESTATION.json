@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "service_key": "orchestrator",
+  "requirements": [
+    {
+      "req_key": "REQ-003",
+      "status": "implemented",
+      "file": "src/orchestrator_app/nodes.py",
+      "line": 141,
+      "symbol": "node_manager_manual_assign",
+      "test": "tests/test_gates.py::test_manager_gate_halts_then_resumes_exactly_once",
+      "note": "node_auto_assign_agent (nodes.py:114) calls the domain service's round-robin assignment; route_check_agent_available (nodes.py:137) routes yes/no on the result to two distinct targets: capture_risk_data vs manager_manual_assign (wired in graph.py add_conditional_edges). When no active agent covers the city, the graph halts at manager_manual_assign (interrupt_before in graph.py GATE_NODES) with no SLA/escalation. node_manager_manual_assign (this entry, line 141) raises ValidationError if resumed without a chosen_agent_id, so the pipeline cannot proceed to capture_risk_data without exactly one agent id set; OrchestratorRuntime._resume_gate (runtime.py) tracks resolved_gates so a repeated resume call never re-applies the assignment, enforcing 'never assigned to two agents'. Both branches set assigned_agent_id before capture_risk_data, enforcing 'never left unassigned'."
+    },
+    {
+      "req_key": "REQ-007",
+      "status": "implemented",
+      "file": "src/orchestrator_app/nodes.py",
+      "line": 211,
+      "symbol": "node_underwriter_review_referral",
+      "test": "tests/test_gates.py::test_underwriter_gate_halts_then_approve_with_loading_resumes and tests/test_gates.py::test_underwriter_gate_reject_lands_on_lead_lost_not_the_happy_path",
+      "note": "node_underwriter_review_referral (this entry, line 211) is wired with interrupt_before (graph.py GATE_NODES) so the run halts there with no SLA/escalation until the resume or reject endpoint sets underwriter_decision and re-invokes the graph; it rejects an unresumed/invalid decision via ValidationError. route_check_underwriter_decision (nodes.py:230) routes 'decline' to lead_lost_underwriter_decline (nodes.py:234, sets lost_reason='Underwriter declined' and ends the case) and 'approve'/'approve_with_loading' to record_underwriter_outcome (nodes.py:248) -> auto_rate_quote, two distinct targets wired in graph.py add_conditional_edges. OrchestratorRuntime._resume_gate makes both the approve and reject endpoints idempotent."
+    }
+  ]
+}

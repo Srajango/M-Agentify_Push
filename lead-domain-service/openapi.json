@@ -1,0 +1,827 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lead & Policy Domain Service",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Upsert Agent Record",
+        "operationId": "upsert_agent_record_agents_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AgentUpsertRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      },
+      "get": {
+        "tags": ["agents"],
+        "summary": "List Agents",
+        "operationId": "list_agents_agents_get",
+        "parameters": [
+          { "name": "city", "in": "query", "required": false, "schema": { "type": "string", "nullable": true } },
+          { "name": "active", "in": "query", "required": false, "schema": { "type": "boolean", "nullable": true } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AgentResponse" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leads": {
+      "post": {
+        "tags": ["leads"],
+        "summary": "Register Lead",
+        "operationId": "register_lead_leads_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LeadRegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LeadResponse" }
+              }
+            }
+          },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      },
+      "get": {
+        "tags": ["reporting"],
+        "summary": "List Leads",
+        "operationId": "list_leads_leads_get",
+        "parameters": [
+          { "name": "role", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "agent_id", "in": "query", "required": false, "schema": { "type": "string", "nullable": true } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LeadListResponse" }
+              }
+            }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}": {
+      "get": {
+        "tags": ["leads"],
+        "summary": "Get Lead",
+        "operationId": "get_lead_leads__lead_id__get",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LeadResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/leads/{lead_id}/assign": {
+      "post": {
+        "tags": ["leads"],
+        "summary": "Assign Agent",
+        "operationId": "assign_agent_leads__lead_id__assign_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "manager_agent_id", "in": "query", "required": false, "schema": { "type": "string", "nullable": true } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LeadResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/reassign": {
+      "post": {
+        "tags": ["leads"],
+        "summary": "Reassign Lead",
+        "operationId": "reassign_lead_leads__lead_id__reassign_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LeadReassignRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LeadResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/risk": {
+      "post": {
+        "tags": ["risk"],
+        "summary": "Submit Risk Data",
+        "operationId": "submit_risk_data_leads__lead_id__risk_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RiskSubmitRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RiskResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/risk/screen": {
+      "post": {
+        "tags": ["risk"],
+        "summary": "Screen Appetite",
+        "operationId": "screen_appetite_leads__lead_id__risk_screen_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RiskResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/risk/underwriting": {
+      "post": {
+        "tags": ["risk"],
+        "summary": "Record Underwriter Outcome",
+        "operationId": "record_underwriter_outcome_leads__lead_id__risk_underwriting_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UnderwriterOutcomeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RiskResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/quote": {
+      "post": {
+        "tags": ["quotes"],
+        "summary": "Rate Quote",
+        "operationId": "rate_quote_leads__lead_id__quote_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QuoteResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/quotes": {
+      "get": {
+        "tags": ["quotes"],
+        "summary": "List Quotes",
+        "operationId": "list_quotes_leads__lead_id__quotes_get",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/QuoteResponse" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leads/{lead_id}/activities": {
+      "post": {
+        "tags": ["activities"],
+        "summary": "Record Contact Activity",
+        "operationId": "record_contact_activity_leads__lead_id__activities_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ActivityCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ActivityResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      },
+      "get": {
+        "tags": ["activities"],
+        "summary": "List Activities",
+        "operationId": "list_activities_leads__lead_id__activities_get",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ActivityResponse" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leads/{lead_id}/decision": {
+      "post": {
+        "tags": ["decisions"],
+        "summary": "Client Decision",
+        "operationId": "client_decision_leads__lead_id__decision_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClientDecisionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClientDecisionResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/leads/{lead_id}/bind": {
+      "post": {
+        "tags": ["bind"],
+        "summary": "Bind And Issue Policy",
+        "operationId": "bind_and_issue_policy_leads__lead_id__bind_post",
+        "parameters": [
+          { "name": "lead_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BindRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BindResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/counts": {
+      "get": {
+        "tags": ["reporting"],
+        "summary": "Counts",
+        "operationId": "counts_counts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CountsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/workflow-events": {
+      "post": {
+        "tags": ["webhooks"],
+        "summary": "Receive Workflow Event",
+        "operationId": "receive_workflow_event_webhooks_workflow_events_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkflowEventIn" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkflowEventAck" }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "NotFound": {
+        "description": "Not Found",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+        }
+      },
+      "Conflict": {
+        "description": "Conflict",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation Error",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+        }
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status"],
+        "properties": { "status": { "type": "string" } }
+      },
+      "AgentUpsertRequest": {
+        "type": "object",
+        "required": ["name", "city", "active"],
+        "properties": {
+          "agent_id": { "type": "string", "nullable": true },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "city": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "active": { "type": "boolean" }
+        }
+      },
+      "AgentResponse": {
+        "type": "object",
+        "required": ["agent_id", "name", "city", "active"],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "name": { "type": "string" },
+          "city": { "type": "string" },
+          "active": { "type": "boolean" }
+        }
+      },
+      "LeadRegisterRequest": {
+        "type": "object",
+        "required": ["customer_name", "mobile_number", "email", "city", "source", "vehicle_registration_number"],
+        "properties": {
+          "customer_name": { "type": "string" },
+          "mobile_number": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "city": { "type": "string" },
+          "source": { "type": "string" },
+          "vehicle_registration_number": { "type": "string" }
+        }
+      },
+      "LeadResponse": {
+        "type": "object",
+        "required": [
+          "lead_id", "customer_name", "mobile_number", "email", "city", "source", "product",
+          "vehicle_registration_number", "status", "agent_id", "lost_reason", "created_at", "updated_at"
+        ],
+        "properties": {
+          "lead_id": { "type": "string" },
+          "customer_name": { "type": "string" },
+          "mobile_number": { "type": "string" },
+          "email": { "type": "string" },
+          "city": { "type": "string" },
+          "source": { "type": "string" },
+          "product": { "type": "string" },
+          "vehicle_registration_number": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["New", "Capture", "Referred", "Approved", "Quoted", "Lost", "Converted"]
+          },
+          "agent_id": { "type": "string", "nullable": true },
+          "lost_reason": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LeadReassignRequest": {
+        "type": "object",
+        "required": ["new_agent_id"],
+        "properties": { "new_agent_id": { "type": "string" } }
+      },
+      "RiskSubmitRequest": {
+        "type": "object",
+        "properties": {
+          "vehicle_make": { "type": "string", "nullable": true },
+          "vehicle_model": { "type": "string", "nullable": true },
+          "registration_year": { "type": "integer", "nullable": true },
+          "idv": { "type": "number", "nullable": true },
+          "coverage_type": {
+            "type": "string",
+            "enum": ["ThirdParty", "Comprehensive"],
+            "nullable": true
+          },
+          "no_claim_bonus_fraction": { "type": "number", "nullable": true },
+          "prior_claims_count": { "type": "integer", "nullable": true }
+        }
+      },
+      "RiskResponse": {
+        "type": "object",
+        "required": [
+          "risk_id", "lead_id", "vehicle_make", "vehicle_model", "registration_year", "idv",
+          "coverage_type", "no_claim_bonus_fraction", "prior_claims_count", "is_complete",
+          "missing_fields", "appetite_outcome", "appetite_reason", "underwriter_outcome",
+          "loading_percent", "decline_reason", "is_approved", "lead_status"
+        ],
+        "properties": {
+          "risk_id": { "type": "string" },
+          "lead_id": { "type": "string" },
+          "vehicle_make": { "type": "string", "nullable": true },
+          "vehicle_model": { "type": "string", "nullable": true },
+          "registration_year": { "type": "integer", "nullable": true },
+          "idv": { "type": "number", "nullable": true },
+          "coverage_type": { "type": "string", "nullable": true },
+          "no_claim_bonus_fraction": { "type": "number", "nullable": true },
+          "prior_claims_count": { "type": "integer", "nullable": true },
+          "is_complete": { "type": "boolean" },
+          "missing_fields": { "type": "array", "items": { "type": "string" } },
+          "appetite_outcome": { "type": "string", "nullable": true, "enum": ["Clear", "Refer", "Decline", null] },
+          "appetite_reason": { "type": "string", "nullable": true },
+          "underwriter_outcome": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["Approved", "ApprovedWithLoading", "Declined", null]
+          },
+          "loading_percent": { "type": "number", "nullable": true },
+          "decline_reason": { "type": "string", "nullable": true },
+          "is_approved": { "type": "boolean" },
+          "lead_status": { "type": "string" }
+        }
+      },
+      "UnderwriterOutcomeRequest": {
+        "type": "object",
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "type": "string", "enum": ["Approved", "ApprovedWithLoading", "Declined"] },
+          "loading_percent": { "type": "number", "nullable": true }
+        }
+      },
+      "QuoteResponse": {
+        "type": "object",
+        "required": [
+          "quote_id", "lead_id", "risk_id", "version", "coverage_type", "idv",
+          "own_damage_premium", "third_party_premium", "no_claim_bonus_amount",
+          "loading_amount", "total_premium", "status", "rated_at", "expires_at", "lead_status"
+        ],
+        "properties": {
+          "quote_id": { "type": "string" },
+          "lead_id": { "type": "string" },
+          "risk_id": { "type": "string" },
+          "version": { "type": "integer" },
+          "coverage_type": { "type": "string", "enum": ["ThirdParty", "Comprehensive"] },
+          "idv": { "type": "number" },
+          "own_damage_premium": { "type": "number" },
+          "third_party_premium": { "type": "number" },
+          "no_claim_bonus_amount": { "type": "number" },
+          "loading_amount": { "type": "number" },
+          "total_premium": { "type": "number" },
+          "status": { "type": "string", "enum": ["Active", "Replaced", "Accepted", "Expired", "Declined"] },
+          "rated_at": { "type": "string", "format": "date-time" },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "lead_status": { "type": "string" }
+        }
+      },
+      "ActivityCreateRequest": {
+        "type": "object",
+        "required": ["agent_id", "channel", "outcome", "note"],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "channel": { "type": "string", "enum": ["call", "meeting", "whatsapp"] },
+          "outcome": {
+            "type": "string",
+            "enum": ["no_answer", "interested", "follow_up_booked", "not_interested"]
+          },
+          "note": { "type": "string", "minLength": 1 },
+          "next_follow_up_date": { "type": "string", "format": "date", "nullable": true }
+        }
+      },
+      "ActivityResponse": {
+        "type": "object",
+        "required": ["activity_id", "lead_id", "agent_id", "channel", "outcome", "note", "next_follow_up_date", "occurred_at"],
+        "properties": {
+          "activity_id": { "type": "string" },
+          "lead_id": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "channel": { "type": "string" },
+          "outcome": { "type": "string" },
+          "note": { "type": "string" },
+          "next_follow_up_date": { "type": "string", "format": "date", "nullable": true },
+          "occurred_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ClientDecisionRequest": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": { "type": "string", "enum": ["accept", "decline"] },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "enum": ["price", "bought_elsewhere", "not_interested", null]
+          }
+        }
+      },
+      "ClientDecisionResponse": {
+        "type": "object",
+        "required": ["lead_id", "lead_status"],
+        "properties": {
+          "lead_id": { "type": "string" },
+          "lead_status": { "type": "string" },
+          "lost_reason": { "type": "string", "nullable": true },
+          "quote_id": { "type": "string", "nullable": true },
+          "quote_status": { "type": "string", "nullable": true },
+          "total_premium": { "type": "number", "nullable": true },
+          "expires_at": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "BindRequest": {
+        "type": "object",
+        "required": ["effective_date", "collected_amount"],
+        "properties": {
+          "effective_date": { "type": "string", "format": "date" },
+          "collected_amount": { "type": "number" }
+        }
+      },
+      "BindResponse": {
+        "type": "object",
+        "required": [
+          "policy_number", "lead_id", "lead_status", "coverage_type", "idv",
+          "premium_breakdown", "no_claim_bonus_amount", "loading_amount", "effective_date", "issued_at"
+        ],
+        "properties": {
+          "policy_number": { "type": "string", "pattern": "^PC-\\d{4}-\\d{6}$" },
+          "lead_id": { "type": "string" },
+          "lead_status": { "type": "string" },
+          "coverage_type": { "type": "string" },
+          "idv": { "type": "number" },
+          "premium_breakdown": { "type": "object" },
+          "no_claim_bonus_amount": { "type": "number" },
+          "loading_amount": { "type": "number" },
+          "effective_date": { "type": "string", "format": "date" },
+          "issued_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AgentCounts": {
+        "type": "object",
+        "required": ["agent_id", "name", "assigned", "open", "converted", "lost", "conversion_rate"],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "name": { "type": "string" },
+          "assigned": { "type": "integer" },
+          "open": { "type": "integer" },
+          "converted": { "type": "integer" },
+          "lost": { "type": "integer" },
+          "conversion_rate": { "type": "number" }
+        }
+      },
+      "AgencyCounts": {
+        "type": "object",
+        "required": ["assigned", "open", "converted", "lost", "conversion_rate"],
+        "properties": {
+          "assigned": { "type": "integer" },
+          "open": { "type": "integer" },
+          "converted": { "type": "integer" },
+          "lost": { "type": "integer" },
+          "conversion_rate": { "type": "number" }
+        }
+      },
+      "CountsResponse": {
+        "type": "object",
+        "required": ["agents", "agency"],
+        "properties": {
+          "agents": { "type": "array", "items": { "$ref": "#/components/schemas/AgentCounts" } },
+          "agency": { "$ref": "#/components/schemas/AgencyCounts" }
+        }
+      },
+      "LeadListResponse": {
+        "type": "object",
+        "required": ["role", "leads"],
+        "properties": {
+          "role": { "type": "string" },
+          "leads": { "type": "array", "items": { "$ref": "#/components/schemas/LeadResponse" } },
+          "counts": { "anyOf": [{ "$ref": "#/components/schemas/CountsResponse" }, { "type": "null" }] }
+        }
+      },
+      "WorkflowEventIn": {
+        "type": "object",
+        "required": ["event_id", "event_type"],
+        "properties": {
+          "event_id": { "type": "string" },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "manual_assignment_made",
+              "underwriter_decision_made",
+              "client_accepted",
+              "client_declined"
+            ]
+          },
+          "lead_id": { "type": "string", "nullable": true },
+          "payload": { "type": "object" }
+        }
+      },
+      "WorkflowEventAck": {
+        "type": "object",
+        "required": ["event_id", "status", "duplicate"],
+        "properties": {
+          "event_id": { "type": "string" },
+          "status": { "type": "string" },
+          "duplicate": { "type": "boolean" }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "$ref": "#/components/schemas/ErrorDetail" }
+        }
+      }
+    }
+  }
+}
