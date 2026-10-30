@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "approval-ui",
+    "version": "1.0.0",
+    "description": "Approval UI is a static React + TypeScript single-page app. It is a kind=ui service whose frozen contract has service.provides = [] — it serves no HTTP API of its own (no src/app.ts, no routes, no /health of its own). The browser bundle calls the orchestrator's dependency contract (see x-consumes below) directly from src/api/orchestratorClient.ts; nothing in this repository is exposed for other services to call."
+  },
+  "paths": {},
+  "x-consumes": {
+    "orchestrator": {
+      "baseUrlEnv": "VITE_ORCHESTRATOR_BASE_URL",
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "source": "src/api/orchestratorClient.ts#fetchHealth",
+          "frozen": true
+        },
+        {
+          "method": "GET",
+          "path": "/human-gates/manager_manual_assign/queue",
+          "source": "src/api/orchestratorClient.ts#fetchManagerAssignQueue",
+          "frozen": false,
+          "note": "Shape not in the frozen contract; see GAPS.json."
+        },
+        {
+          "method": "POST",
+          "path": "/human-gates/manager_manual_assign/resume",
+          "source": "src/api/orchestratorClient.ts#resumeManagerAssign",
+          "op_id": "op_ce482f80d0fcea34",
+          "frozen": false,
+          "note": "Method/path not in the frozen contract; see GAPS.json."
+        },
+        {
+          "method": "GET",
+          "path": "/human-gates/underwriter_review_referral/queue",
+          "source": "src/api/orchestratorClient.ts#fetchReferralQueue",
+          "frozen": false,
+          "note": "Shape not in the frozen contract; see GAPS.json."
+        },
+        {
+          "method": "POST",
+          "path": "/human-gates/underwriter_review_referral/resume",
+          "source": "src/api/orchestratorClient.ts#resumeReferral",
+          "op_id": "op_e24ddacd8a90f3a1",
+          "frozen": false,
+          "note": "Method/path not in the frozen contract; see GAPS.json."
+        },
+        {
+          "method": "POST",
+          "path": "/human-gates/underwriter_review_referral/reject",
+          "source": "src/api/orchestratorClient.ts#rejectReferral",
+          "op_id": "op_bc42e7eadaa65523",
+          "frozen": false,
+          "note": "Method/path not in the frozen contract; see GAPS.json."
+        }
+      ]
+    }
+  }
+}

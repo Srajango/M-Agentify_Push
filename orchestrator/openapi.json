@@ -1,0 +1,360 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lead-to-Policy Orchestrator",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs": {
+      "post": {
+        "summary": "Trigger Run",
+        "operationId": "trigger_run_runs_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TriggerRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RunResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}": {
+      "get": {
+        "summary": "Get Run",
+        "operationId": "get_run_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RunDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Run not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/events": {
+      "get": {
+        "summary": "Run Events",
+        "description": "Server-Sent Events stream of every transition recorded so far, replayed first, then any new ones.",
+        "operationId": "run_events_runs__run_id__events_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "text/event-stream of {run_id, step_id, status, detail} frames",
+            "content": {
+              "text/event-stream": { "schema": { "type": "string" } }
+            }
+          },
+          "404": {
+            "description": "Run not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/steps/manager_manual_assign/approve": {
+      "post": {
+        "summary": "Approve Manager Assignment",
+        "description": "Resumes the Manager Assigns Agent From Queue human gate (REQ-003). Idempotent.",
+        "operationId": "approve_manager_assignment_runs__run_id__steps_manager_manual_assign_approve_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ManagerAssignApproveRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RunResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Run is not awaiting approval at this gate",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/steps/underwriter_review_referral/approve": {
+      "post": {
+        "summary": "Approve Underwriter Referral",
+        "description": "Resumes the Underwriter Decides On Referred Risk human gate (REQ-007) with Approve or Approve with loading. Idempotent.",
+        "operationId": "approve_underwriter_referral_runs__run_id__steps_underwriter_review_referral_approve_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UnderwriterApproveRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RunResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Run is not awaiting approval at this gate",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/steps/underwriter_review_referral/reject": {
+      "post": {
+        "summary": "Reject Underwriter Referral",
+        "description": "Rejects the referral; sets the lead Lost with reason 'Underwriter declined'. Idempotent.",
+        "operationId": "reject_underwriter_referral_runs__run_id__steps_underwriter_review_referral_reject_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RunResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Run is not awaiting approval at this gate",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error_type", "message"],
+        "properties": {
+          "error_type": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "LeadPayload": {
+        "type": "object",
+        "required": ["customer_name", "mobile_number", "email", "city", "source", "vehicle_reg"],
+        "properties": {
+          "lead_id": { "type": "string", "nullable": true },
+          "customer_name": { "type": "string" },
+          "mobile_number": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "city": { "type": "string" },
+          "source": { "type": "string" },
+          "vehicle_reg": { "type": "string" },
+          "rerate_requested_count": { "type": "integer", "default": 0 }
+        }
+      },
+      "TriggerRequest": {
+        "type": "object",
+        "required": ["run_type"],
+        "properties": {
+          "run_type": {
+            "type": "string",
+            "enum": ["lead", "agent_management", "reassignment", "access_report"]
+          },
+          "lead": { "anyOf": [{ "$ref": "#/components/schemas/LeadPayload" }, { "type": "null" }] },
+          "risk_data": { "type": "object" },
+          "bind_inputs": { "type": "object" },
+          "reassignment": { "type": "object" },
+          "agent_record": { "type": "object" },
+          "access_report": { "type": "object" }
+        }
+      },
+      "RunResponse": {
+        "type": "object",
+        "required": ["run_id", "run_type", "status", "current_node"],
+        "properties": {
+          "run_id": { "type": "string" },
+          "run_type": { "type": "string" },
+          "status": { "type": "string" },
+          "current_node": { "type": "string" }
+        }
+      },
+      "RunStepResponse": {
+        "type": "object",
+        "required": ["step_id", "status", "attempts"],
+        "properties": {
+          "step_id": { "type": "string" },
+          "status": { "type": "string" },
+          "attempts": { "type": "integer" },
+          "detail": { "type": "string", "nullable": true }
+        }
+      },
+      "RunDetailResponse": {
+        "type": "object",
+        "required": ["run_id", "run_type", "status", "current_node", "steps"],
+        "properties": {
+          "run_id": { "type": "string" },
+          "run_type": { "type": "string" },
+          "status": { "type": "string" },
+          "current_node": { "type": "string" },
+          "steps": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RunStepResponse" }
+          }
+        }
+      },
+      "ManagerAssignApproveRequest": {
+        "type": "object",
+        "required": ["agent_id"],
+        "properties": {
+          "agent_id": { "type": "string" }
+        }
+      },
+      "UnderwriterApproveRequest": {
+        "type": "object",
+        "required": ["decision"],
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": ["approve", "approve_with_loading"]
+          }
+        }
+      },
+      "HTTPValidationError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      }
+    }
+  }
+}
